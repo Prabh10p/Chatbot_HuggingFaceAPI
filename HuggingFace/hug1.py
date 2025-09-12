@@ -1,48 +1,27 @@
-from langchain_huggingface import ChatHuggingFace,HuggingFaceEndpoint
-from langchain.prompts import PromptTemplate
-from dotenv import load_dotenv
 import streamlit as st
-load_dotenv()
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 
+# Get token: local env fallback or Streamlit Cloud secret
+import os
+HF_TOKEN = os.getenv("HUGGINGFACE_API_TOKEN") or st.secrets.get("HUGGINGFACE_API_TOKEN")
 
 llm = HuggingFaceEndpoint(
-    repo_id ="google/gemma-2-9b-it",
-    task = "conversation"
+    repo_id="google/gemma-2-9b-it",
+    task="conversational",
+    api_key=HF_TOKEN   # <- must be passed here
 )
 
-model = ChatHuggingFace(llm = llm)
+model = ChatHuggingFace(llm=llm)
 
+# Streamlit UI
 st.header("Chat Bot Assistant")
-st.markdown("<style>div.stApp {background: url('https://picsum.photos/1920/1080') no-repeat center center fixed; background-size: cover;}</style>", unsafe_allow_html=True)
+user_input = st.text_input("What do you want to ask?")
+topic_input = st.selectbox("Choose a topic", ["Technology", "Health", "Finance", "Education", "Entertainment"])
+style_input = st.selectbox("Choose a style", ["Formal", "Informal", "Humorous", "Serious", "Casual"])
+length_input = st.selectbox("Choose length", ["Short", "Medium", "Long"])
 
-user_input = st.text_input("What do you want to ask? ")
-
-topic_input = st.selectbox("Choose a topic",["Technology","Health","Finance","Education","Entertainment"])
-
-style_input = st.selectbox("Choose a style",["Formal","Informal","Humorous","Serious","Casual"])
-
-length_input = st.selectbox("Choose length",["Short","Medium","Long"])
-
-
-
-prompt = PromptTemplate(
-    inmput_variables = ["user_input","topic_input","style_input","lenght_input"],
-    template = "You are expert in {topic_input}. Answer {user_input} in a {style_input} with {length_input} response")
-
-
-
-user_input = prompt.invoke(
-    {
-        "user_input":user_input,
-        "topic_input":topic_input,
-        "style_input":style_input,
-        "length_input":length_input
-    }
-)
-
-if st.button("Submit"):
-    response = model.invoke(user_input)
+if st.button("Answer"):
+    # Make sure you pass a string, not a Streamlit object
+    prompt = f"You are an expert in {topic_input}. Answer '{user_input}' in a {style_input} style and keep answer {length_input}."
+    response = model.invoke(prompt)
     st.write(response.content)
-
-
-# Email - p0l81532@marymout.edu
